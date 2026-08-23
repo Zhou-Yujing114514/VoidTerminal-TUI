@@ -62,7 +62,7 @@ class WSClient:
 
     async def send(self, data: dict):
         """发送消息"""
-        if self.ws and self.ws.open:
+        if self.ws and self.ws.state == websockets.State.OPEN:
             await self.ws.send(json.dumps(data))
             return True
         return False

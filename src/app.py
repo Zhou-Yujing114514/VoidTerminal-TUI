@@ -473,17 +473,17 @@ class ChatApp(App):
         except Exception as e:
             self.log(f"[refresh_messages] 异常: {e}")
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
         """按钮点击"""
         if event.button.id == "send-btn":
-            self.send_current_message()
+            await self.send_current_message()
 
-    def on_input_submitted(self, event: Input.Submitted) -> None:
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
         """输入框回车"""
         if event.input.id == "msg-input":
-            self.send_current_message()
+            await self.send_current_message()
 
-    def send_current_message(self) -> None:
+    async def send_current_message(self) -> None:
         """发送当前消息"""
         try:
             input_widget = self.query_one("#msg-input", Input)
@@ -498,15 +498,18 @@ class ChatApp(App):
             elif conv["type"] == "group":
                 kwargs["gid"] = conv["id"]
 
-            asyncio.create_task(self.ws.send_message(conv["type"], content, **kwargs))
-            input_widget.value = ""
+            success = await self.ws.send_message(conv["type"], content, **kwargs)
+            if success:
+                input_widget.value = ""
+            else:
+                self.notify("发送失败：WebSocket 未连接，请稍候重试", severity="error")
         except Exception as e:
             self.log(f"[send_current_message] 异常: {e}")
             self.notify(f"发送失败: {e}", severity="error")
 
-    def action_send_message(self) -> None:
+    async def action_send_message(self) -> None:
         """快捷键发送"""
-        self.send_current_message()
+        await self.send_current_message()
 
     def action_switch_focus(self) -> None:
         """切换焦点"""
