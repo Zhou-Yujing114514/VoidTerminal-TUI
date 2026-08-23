@@ -173,11 +173,9 @@ class ChatApp(App):
     }
 
     .msg-bubble {
-        margin: 0.5 0;
-        padding: 0.5 1;
+        margin: 1 0;
+        padding: 1 1;
         background: #16213e;
-        border-radius: 4;
-        max-width: 80%;
     }
 
     .msg-bubble.me {
@@ -211,8 +209,7 @@ class ChatApp(App):
     }
 
     .conv-item {
-        padding: 0.5 1;
-        cursor: pointer;
+        padding: 1 1;
     }
 
     .conv-item:hover {
