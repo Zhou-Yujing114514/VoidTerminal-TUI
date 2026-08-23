@@ -29,15 +29,15 @@ class LoginScreen(Container):
             id="login-box"
         )
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "login-btn":
-            self.app.do_login()
+            await self.app.do_login()
         elif event.button.id == "register-btn":
-            self.app.do_register()
+            await self.app.do_register()
 
-    def on_input_submitted(self, event: Input.Submitted) -> None:
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id in ("login-username", "login-password"):
-            self.app.do_login()
+            await self.app.do_login()
 
 
 class ChatMessage(Static):
@@ -336,20 +336,20 @@ class ChatApp(App):
         await self.ws.connect(self.api.token)
 
     async def on_ws_open(self) -> None:
-        """WebSocket 连接成功"""
+        """WebSocket 连接成功，等待认证"""
         try:
             status = self.query_one("#status-bar", Static)
-            status.update("[green]● 已连接[/green]")
-        except:
-            pass
+            status.update("[yellow]● 认证中...[/yellow]")
+        except Exception as e:
+            self.log(f"[on_ws_open] 异常: {e}")
 
     async def on_ws_close(self, reason: str = "") -> None:
         """WebSocket 断开"""
         try:
             status = self.query_one("#status-bar", Static)
             status.update(f"[red]● 断开连接: {reason}[/red]")
-        except:
-            pass
+        except Exception as e:
+            self.log(f"[on_ws_close] 异常: {e}")
 
     async def on_ws_message(self, data: dict) -> None:
         """处理 WebSocket 消息"""
@@ -379,6 +379,13 @@ class ChatApp(App):
 
             self.load_conversations()
             self.refresh_messages()
+
+            # 认证完成，更新状态栏
+            try:
+                status = self.query_one("#status-bar", Static)
+                status.update("[green]● 已连接[/green]")
+            except Exception as e:
+                self.log(f"[hello] 更新状态栏异常: {e}")
 
         elif msg_type in ("global", "dm", "group"):
             # 新消息
@@ -422,8 +429,8 @@ class ChatApp(App):
             for gid, group in self.groups.items():
                 unread = 0
                 list_view.append(ConversationItem("group", gid, group.get("name", gid), unread))
-        except:
-            pass
+        except Exception as e:
+            self.log(f"[load_conversations] 异常: {e}")
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """会话列表选中"""
@@ -464,7 +471,7 @@ class ChatApp(App):
             # 滚动到底部
             container.scroll_end(animate=False)
         except Exception as e:
-            pass
+            self.log(f"[refresh_messages] 异常: {e}")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """按钮点击"""
@@ -494,7 +501,8 @@ class ChatApp(App):
             asyncio.create_task(self.ws.send_message(conv["type"], content, **kwargs))
             input_widget.value = ""
         except Exception as e:
-            pass
+            self.log(f"[send_current_message] 异常: {e}")
+            self.notify(f"发送失败: {e}", severity="error")
 
     def action_send_message(self) -> None:
         """快捷键发送"""
