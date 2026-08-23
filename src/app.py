@@ -354,6 +354,7 @@ class ChatApp(App):
     async def on_ws_message(self, data: dict) -> None:
         """处理 WebSocket 消息"""
         msg_type = data.get("type")
+        self.log(f"[WS] 收到消息 type={msg_type}")
 
         if msg_type == "hello":
             # 初始数据
@@ -389,10 +390,12 @@ class ChatApp(App):
 
         elif msg_type in ("global", "dm", "group"):
             # 新消息
+            my_id = self.current_user.get("id") if self.current_user else None
+            self.log(f"[WS] 新消息: type={msg_type}, from={data.get('from')}, content={data.get('content','')[:30]}")
             if msg_type == "global":
                 self.messages["global"].append(data)
             elif msg_type == "dm":
-                peer = data.get("from") if data.get("from") != self.current_user.get("id") else data.get("to")
+                peer = data.get("from") if (my_id and data.get("from") != my_id) else data.get("to")
                 if peer not in self.messages["dm"]:
                     self.messages["dm"][peer] = []
                 self.messages["dm"][peer].append(data)
@@ -403,11 +406,17 @@ class ChatApp(App):
                 self.messages["group"][gid].append(data)
 
             # 如果在当前会话，刷新显示
-            if (self.active_conversation["type"] == msg_type and
-                (msg_type == "global" or
-                 (msg_type == "dm" and self.active_conversation["id"] in (data.get("from"), data.get("to"))) or
-                 (msg_type == "group" and self.active_conversation["id"] == data.get("gid")))):
+            should_refresh = False
+            if self.active_conversation["type"] == msg_type:
+                if msg_type == "global":
+                    should_refresh = True
+                elif msg_type == "dm" and self.active_conversation["id"] in (data.get("from"), data.get("to")):
+                    should_refresh = True
+                elif msg_type == "group" and self.active_conversation["id"] == data.get("gid"):
+                    should_refresh = True
+            if should_refresh:
                 self.refresh_messages()
+                self.log(f"[WS] 已刷新当前会话显示")
 
             self.load_conversations()
 
