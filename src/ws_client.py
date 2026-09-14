@@ -4,7 +4,8 @@ import json
 import websockets
 from typing import Callable, Optional
 
-DEFAULT_WS = "ws://buer.kdns.fr/ws"
+# 安全：WS 通道携带鉴权 token，必须走 WSS（v2.1.0 起由 ws 改为 wss）
+DEFAULT_WS = "wss://buer.kdns.fr/ws"
 
 class WSClient:
     def __init__(self, ws_url: str = DEFAULT_WS):

@@ -2,7 +2,8 @@
 import requests
 import json
 
-DEFAULT_SERVER = "http://buer.kdns.fr"
+# 安全：登录/注册接口携带账号密码，必须走 HTTPS（v2.1.0 起由 http 改为 https）
+DEFAULT_SERVER = "https://buer.kdns.fr"
 
 class ChatAPI:
     def __init__(self, server: str = DEFAULT_SERVER):
@@ -38,5 +39,5 @@ class ChatAPI:
         try:
             r = requests.get(self._url("/api/stickers"), timeout=5)
             return r.json().get("stickers", [])
-        except:
+        except Exception:
             return []
